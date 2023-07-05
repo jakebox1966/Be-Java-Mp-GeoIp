@@ -1,0 +1,281 @@
+<!--
+View 단은 최대한 단순하게 html, ajax, semantic-ui로 구성하여 진행했습니다.
+디자인과 CSS는 무시하셔도 됩니다......ㄷㄷㄷㄷㄷ......
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+
+<link rel="stylesheet" type="text/css" href="css/semantic.min.css">
+<script src="js/jquery.js"></script>
+<style type="text/css">
+    body {
+        background-color: #DADADA;
+    }
+
+    body > .grid {
+        height: 100%;
+    }
+
+    .image {
+        margin-top: -100px;
+    }
+
+    .column {
+        max-width: fit-content;
+    }
+
+    .field {
+        display: inline-flex !important;
+        margin-left: 5px !important;
+        margin-right: 5px !important;
+    }
+
+    .ui.header {
+        color: black !important;
+    }
+
+    .ui.button {
+        background-color: black;
+        color: #fff;
+        text-shadow: none;
+        background-image: none
+    }
+
+    td {
+        width: 50%;
+    }
+
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+
+    .hide-first {
+        display: none;
+    }
+
+    .result-area-margin-top {
+        margin-top: 14px;
+    }
+</style>
+<body>
+<div class="ui middle aligned center aligned grid">
+    <div class="column">
+        <h2 class="ui image header">
+            <div class="content">
+                Check Your IP Address ( This is based on Ipv4 )
+            </div>
+        </h2>
+        <form class="ui large form">
+            <div class="ui stacked segment">
+                <div class="field">
+                    <div class="ui left input">
+                        <input class="" type="number" id="firstOctet" placeholder="FirstOctet"
+                               oninput="maxLengthCheck(this)">
+                    </div>
+                </div>
+                .
+                <div class="field">
+                    <div class="ui left input">
+                        <input class="" type="number" id="secondOctet" placeholder="SecondOctet"
+                               oninput="maxLengthCheck(this)">
+                    </div>
+                </div>
+                .
+                <div class="field">
+                    <div class="ui left input">
+                        <input class="" type="number" id="thirdOctet" placeholder="ThirdOctet"
+                               oninput="maxLengthCheck(this)">
+                    </div>
+                </div>
+                .
+                <div class="field">
+                    <div class="ui left input">
+                        <input class="" type="number" id="fourthOctet" placeholder="FourthOctet"
+                               oninput="maxLengthCheck(this)">
+                    </div>
+                </div>
+                <div class="ui fluid large submit button" id="submitBtn" onclick="checkIp()">Check</div>
+            </div>
+        </form>
+
+        <div class="hide-first result-area-margin-top" id="result">
+            <div class="ui message">
+                <h4 class="ui header left aligned">Country Name : <span id="countryName"></span></h4>
+                <div class="ui divider"></div>
+                <h4 class="ui header left aligned">Continent Name : <span id="continentName"></span></h4>
+            </div>
+
+            <div class="ui message">
+                <h2 class="ui header left">How To Convert</h2>
+                <div class="ui divider"></div>
+
+                <h4 class="ui header left aligned">To convert an IP address to integer, break it into four octets. For
+                    example, the ip address you provided can be broken into following table</h4>
+                <table class="ui celled table">
+                    <tbody>
+                    <tr>
+                        <td>First Octet</td>
+                        <td id="octet1"></td>
+                    </tr>
+                    <tr>
+                        <td>Second Octet</td>
+                        <td id="octet2"></td>
+                    </tr>
+                    <tr>
+                        <td>Third Octet</td>
+                        <td id="octet3"></td>
+                    </tr>
+                    <tr>
+                        <td>Fourth Octet</td>
+                        <td id="octet4"></td>
+                    </tr>
+                    </tbody>
+                </table>
+                <h4 class="ui header left aligned">To calculate the decimal address from a dotted string, perform the
+                    following calculation.</h4>
+
+                <div class="ui message">
+                    <p> (first octet * 256³) + (second octet * 256²) + (third octet * 256) + (fourth octet)</p>
+                </div>
+                <div class="ui message">
+                    <p> (<span id="octet11"></span> * 256³) + (<span id="octet22"></span> * 256²) + (<span
+                            id="octet33"></span> * 256) + (<span id="octet44"></span>)</p>
+                </div>
+                <div class="ui message">
+                    <p> (<span id="octet111"></span>) + (<span id="octet222"></span>) + (<span id="octet333"></span>) +
+                        (<span id="octet444"></span>) = <span id="totalInteger"></span></p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+</body>
+
+<script>
+
+    /**
+     * input에 Enter 처리입니다.
+     * 기존에 방식의 event를 파라미터로 넘겨주는 방식은 deprecated 되어 addEventListener로 변경했습니다.
+     *
+     * @type {HTMLElement}
+     */
+
+    const firstOctet = document.getElementById("firstOctet");
+    const secondOctet = document.getElementById("secondOctet");
+    const thirdOctet = document.getElementById("thirdOctet");
+    const fourthOctet = document.getElementById("fourthOctet");
+
+    const inputArray = [firstOctet, secondOctet, thirdOctet, fourthOctet];
+    const checkEnter = (e) => {
+        if (e.keyCode === 13) {
+            checkIp();
+        }
+    }
+    inputArray.map(e => {
+        e.addEventListener("keypress", checkEnter);
+    })
+
+
+
+    /**
+     * First Octet, SecondOctet, ThirdOctet, FourthOctet 을 각각 입력받고
+     * Ajax를 사용하여 서버로 호출합니다.
+     *
+     * @param String: ex. { ipAddress : 255.255.255.255 }
+     */
+    const checkIp = () => {
+
+        if(!validation()){
+            return;
+        }
+
+        const firstOctet = document.getElementById("firstOctet").value;
+        const secondOctet = document.getElementById("secondOctet").value;
+        const thirdOctet = document.getElementById("thirdOctet").value;
+        const fourthOctet = document.getElementById("fourthOctet").value;
+
+        const array = [firstOctet, secondOctet, thirdOctet, fourthOctet];
+        const ipAddress = array.join('.');
+
+        $.ajax({
+            url: '/geoip',
+            method: 'POST',
+            contentType: 'application/json; charset=utf-8',
+            dataType: 'json',
+            data: JSON.stringify(
+                {ipAddress: ipAddress}
+            ),
+            success: (res) => {
+                console.log(res)
+
+                document.getElementById('result').style.display = 'block';
+
+                document.getElementById("octet1").innerText = res.data.originalFirstOctet;
+                document.getElementById("octet2").innerText = res.data.originalSecondOctet;
+                document.getElementById("octet3").innerText = res.data.originalThirdOctet;
+                document.getElementById("octet4").innerText = res.data.originalFourthOctet;
+
+                document.getElementById("octet11").innerText = res.data.originalFirstOctet;
+                document.getElementById("octet22").innerText = res.data.originalSecondOctet;
+                document.getElementById("octet33").innerText = res.data.originalThirdOctet;
+                document.getElementById("octet44").innerText = res.data.originalFourthOctet;
+
+                document.getElementById("octet111").innerText = res.data.integerFirstOctet;
+                document.getElementById("octet222").innerText = res.data.integerSecondOctet;
+                document.getElementById("octet333").innerText = res.data.integerThirdOctet;
+                document.getElementById("octet444").innerText = res.data.integerFourthOctet;
+
+                document.getElementById('totalInteger').innerText = res.data.totalIntegerIp;
+
+                document.getElementById('countryName').innerText = res.data.countryName;
+                document.getElementById('continentName').innerText = res.data.continentName;
+
+            },
+            error: (err) => {
+                console.log(err)
+            }
+
+        })
+    }
+
+    /**
+     * 각 input의 유효성 검사
+     * 입력값이 0 보다 작을 경우 => 0
+     * 입력값이 255 보다 클 경우 => 255
+     *
+     * @param event
+     */
+    const maxLengthCheck = (e) => {
+        // console.log(e.maxValue)
+        if (e.value > 255) {
+            e.value = 255;
+        }
+        if (e.value < 0) {
+            e.value = 0;
+        }
+    }
+
+    /**
+     * Input 유효성 검증 입니다.
+     * @returns {boolean}
+     */
+    const validation = () => {
+        const firstOctet = document.getElementById("firstOctet").value;
+        const secondOctet = document.getElementById("secondOctet").value;
+        const thirdOctet = document.getElementById("thirdOctet").value;
+        const fourthOctet = document.getElementById("fourthOctet").value;
+
+        if(!firstOctet || !secondOctet || !thirdOctet || !fourthOctet) {
+            return false;
+        }
+        return true;
+    }
+</script>
+</html>
